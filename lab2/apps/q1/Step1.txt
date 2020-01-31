@@ -1,0 +1,7 @@
+a. There can be at most 32 different semaphores in the system.
+b. 64 maximum locks allowed in the system
+c. use a function called sem_create, which grabs a semaphore from the static list of semaphores, initializes it to count, and returns a unique handle corresponding to this semaphore.
+d. sem_signal:increments the count of semaphore sem and wakes up a process waiting on the semaphore.
+   sem_wait:decrements the count of semaphoresemand waits if the countis  negative
+
+e. When a shared page is created in the physical memory, a unique handle is created that corresponds to the page created (so a handle is like a pointer to the shared page).
