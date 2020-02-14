@@ -324,6 +324,7 @@ int LockHandleRelease(lock_t lock) {
 //	should return handle of the condition variable.
 //--------------------------------------------------------------------------
 cond_t CondCreate(lock_t lock) {
+  
   // Your code goes here
   return SYNC_FAIL;
 }
