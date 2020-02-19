@@ -51,18 +51,23 @@ typedef struct Lock {
   int inuse;     // Bookkeeping variable for free vs. used structures
 } Lock;
 
+
 int LockInit(Lock *);
 int LockAcquire(Lock *);
 int LockRelease(Lock *);
 
+
 typedef struct Cond {
-  // Your code goes here
+  lock_t lock;       // PID of process holding the lock, -1 if lock is available
+  Queue waiting; // Queue of processes waiting on the lock
+  uint32 inuse;     // Bookkeeping variable for free vs. used structures
 } Cond;
+
 
 int CondInit(Cond *);
 int CondWait(Cond *);
 int CondSignal(Cond *);
-
+int CondBroadcast(Cond *);
 int SynchModuleInit();
 
 sem_t SemCreate(int count);

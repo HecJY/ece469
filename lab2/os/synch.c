@@ -13,6 +13,8 @@
 
 static Sem sems[MAX_SEMS]; 	// All semaphores in the system
 static Lock locks[MAX_LOCKS];   // All locks in the system
+static Cond conds[MAX_CONDS]; //All conditions in the system
+
 
 extern struct PCB *currentPCB; 
 //----------------------------------------------------------------------
@@ -330,6 +332,12 @@ cond_t CondCreate(lock_t lock) {
   cond_t condition;
   uint32 intrval;
 
+  //check input lock
+  if (lock < 0 || lock >= MAX_LOCKS) {
+    return INVALID_COND;
+  }
+
+
   //check whether or not this lock is in use
   if(locks[lock].inuse == 0){
     printf("The lock entered has been used, condition create failed");
@@ -340,6 +348,7 @@ cond_t CondCreate(lock_t lock) {
   intrval = DisableIntrs();
   for(condition=0; condition<MAX_CONDS; condition++) {
     if(conds[condition].inuse==0) {
+      conds[condition].lock = lock;
       conds[condition].inuse = 1;
       break;
     }
@@ -347,13 +356,12 @@ cond_t CondCreate(lock_t lock) {
   RestoreIntrs(intrval);
   if(condition==MAX_CONDS) return INVALID_COND;
 
-  if (CondInit(&conds[condition]) != SYNC_SUCCESS) return SYNC_FAIL;
-  return l;
+  if (CondInit(&conds[condition]) != SYNC_SUCCESS)  return SYNC_FAIL;
 
   return condition;
 }
 
-int CondInit(cond_t *condition) {
+int CondInit(Cond *condition) {
   if (!condition) return SYNC_FAIL;
   if (AQueueInit (&condition->waiting) != QUEUE_SUCCESS) {
     printf("FATAL ERROR: could not initialize lock waiting queue in LockInit!\n");
@@ -396,7 +404,7 @@ int CondHandleWait(cond_t c) {
 }
 
 
-int CondWait(cond_t *c) {
+int CondWait(Cond *c) {
   Link	*l;
   int		intrval;
     
@@ -405,26 +413,26 @@ int CondWait(cond_t *c) {
   // Locks are atomic
   intrval = DisableIntrs ();
   dbprintf ('I', "Condhandle wait: Old interrupt value was 0x%x.\n", intrval);
-  
+  dbprintf ('s', "CondWait: Proc %d waiting on cond %d\n", GetCurrentPid(), (int)(c-conds));
+  dbprintf ('s', "CondWait: putting process %d to sleep\n", GetCurrentPid());
 
 
   if ((l = AQueueAllocLink ((void *)currentPCB)) == NULL) {
-      printf("FATAL ERROR: could not allocate link for semaphore queue in SemWait!\n");
+      printf("FATAL ERROR: could not allocate link for semaphore queue in CondWait!\n");
       exitsim();
     }
   if (AQueueInsertLast (&c->waiting, l) != QUEUE_SUCCESS) {
-      printf("FATAL ERROR: could not insert new link into semaphore waiting queue in SemWait!\n");
+      printf("FATAL ERROR: could not insert new link into semaphore waiting queue in CondWait!\n");
       exitsim();
   }
 
   // Check to see if the current process owns the lock
 
-  LockRelease(c->l);
+  LockHandleRelease(c->lock);
   RestoreIntrs(intrval);
   ProcessSleep();
-  LockAcquire(c->l);
+  LockHandleAcquire(c->lock);
 
-  RestoreIntrs(intrval);
   return SYNC_SUCCESS;
 }
 
@@ -454,11 +462,14 @@ int CondHandleSignal(cond_t c) {
   if (c < 0) return SYNC_FAIL;
   if (c >= MAX_CONDS) return SYNC_FAIL;
   if (!conds[c].inuse)    return SYNC_FAIL;
+  if (locks[conds[c].lock].pid != GetCurrentPid()) return SYNC_FAIL;
+  if (!locks[conds[c].lock].inuse) return SYNC_FAIL; 
+
   return CondSignal(&conds[c]);
 }
 
 
-int CondSignal (cond_t *c) {
+int CondSignal (Cond *c) {
   Link *l;
   int	intrs;
   PCB *pcb;
@@ -501,12 +512,12 @@ int CondSignal (cond_t *c) {
 int CondHandleBroadcast(cond_t c) {
   // Your code goes here
   if (c < 0) return SYNC_FAIL;
-  if (c >= MAX_CONDS) return SYNC_FAIL;
+  if (c <= MAX_CONDS) return SYNC_FAIL;
   if (!conds[c].inuse)    return SYNC_FAIL;
   return CondBroadcast(&conds[c]);
 }
 
-int CondBroadcast (cond_t *c) {
+int CondBroadcast (Cond *c) {
   Link *l;
   int	intrs;
   PCB *pcb;

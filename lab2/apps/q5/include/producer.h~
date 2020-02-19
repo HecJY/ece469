@@ -1,0 +1,16 @@
+#ifndef __USERPROG__
+#define __USERPROG__
+
+#define LEN 11
+typedef struct circular_buffer{
+  int len = LEN; //because hello worlds' str length
+  char buffer[LEN];
+  int numprocs;
+  int head;
+  int tail;
+} circular_buffer;
+
+#define FILE_PROD "producer.dlx.obj"
+#define FILE_CONS "consumer.dlx.obj"
+
+#endif
