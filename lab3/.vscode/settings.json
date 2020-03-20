@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "ostraps.h": "c",
+        "process.h": "c",
+        "dlxos.h": "c"
+    }
+}
