@@ -45,6 +45,25 @@ typedef struct PCB {
 
   int           pinfo;          // Turns on printing of runtime stats
   int           pnice;          // Used in priority calculation
+  
+  //addtional attributes
+  int resume; //The process resumes, switch 
+  //int jiffies; //The total jiffies the process has run
+  int sleep; //process sleeps time
+  int priority;
+  double estcpu;
+  int num_quanta;
+  int run_time; //in jiffies
+  int wake_time;
+  int base_priority;
+
+
+  //flags (0 is not, 1 is confirmed)
+  int auto_wake; //process wakes from sleep status
+  int yield;
+  int idle;
+
+
 } PCB;
 
 // Offsets of various registers from the stack pointer in the register
@@ -74,6 +93,31 @@ typedef struct PCB {
 // Use this format string for printing CPU stats
 #define PROCESS_CPUSTATS_FORMAT "CPUStats: Process %d has run for %d jiffies, prio = %d\n"
 
+//define some constants
+#define MAX_PRIORITY 127
+
+//from 0 49, total 50
+#define KERNEL_MIN_PRIORITY 0
+#define KERNEL_MAX_PRIORITY 49
+
+#define USER_MIN_PRIORITY 50
+#define USER_MAX_PRIORITY 127
+
+
+#define PRIORITY_PER_QUEUE 4
+#define NUM_QUEUE 32
+
+//decay
+#define TIME_PER_CPU_WINDOW 100
+#define CPU_WINDOWS_BETWEEN_DECAYS 10
+
+
+#define PROCESS_LOAD 1
+
+
+
+
+
 extern PCB	*currentPCB;
 
 int ProcessFork (VoidFunc func, uint32 param, int pnice, int pinfo,char *name, int isUser);
@@ -90,5 +134,19 @@ int GetPidFromAddress(PCB *pcb);
 
 void ProcessUserSleep(int seconds);
 void ProcessYield();
+
+//define the helper functions
+void ProcessRecalcPriority(PCB *pcb);
+inline int WhichQueue(PCB *pcb);
+int ProcessInsertRunning(PCB *pcb);
+void ProcessDecayEstcpu(PCB *pcb);
+void ProcessDecayEstcpuSleep(PCB *pcb, int time_asleep_jiffies);
+PCB *ProcessFindHighestPriorityPCB();
+void ProcessDecayAllEstcpus();
+void ProcessFixRunQueues();
+int ProcessCountAutowake();
+void ProcessPrintRunQueues();
+
+
 
 #endif	/* __process_h__ */
