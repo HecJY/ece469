@@ -49,11 +49,12 @@ typedef struct PCB {
   //addtional attributes
   int resume; //The process resumes, switch 
   //int jiffies; //The total jiffies the process has run
-  int sleep; //process sleeps time
+  int sleep_time; //process sleeps time
   int priority;
   double estcpu;
   int num_quanta;
   int run_time; //in jiffies
+  int switch_time;
   int wake_time;
   int base_priority;
 
@@ -135,7 +136,7 @@ int GetPidFromAddress(PCB *pcb);
 void ProcessUserSleep(int seconds);
 void ProcessYield();
 
-//define the helper functions
+//define the helper functions for q4
 void ProcessRecalcPriority(PCB *pcb);
 inline int WhichQueue(PCB *pcb);
 int ProcessInsertRunning(PCB *pcb);
@@ -146,7 +147,13 @@ void ProcessDecayAllEstcpus();
 void ProcessFixRunQueues();
 int ProcessCountAutowake();
 void ProcessPrintRunQueues();
+void ProcessAutoWake();
+int ProcessCheckRunQueue();
+int ProcessAutowake();
 
 
 
+//define helper functions for q5
+void Idle();
+void Forkidle();
 #endif	/* __process_h__ */

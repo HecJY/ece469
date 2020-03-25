@@ -10,6 +10,8 @@ void main (int argc, char *argv[])
 
   //init the mailbox
   mbox_t s2_mbox;
+  unsigned int h_mem;
+  molecules *mol;
 
   if (argc != 3) {
     Printf("Usage: "); Printf(argv[0]); Printf(" The s2 injection process failed \n");
@@ -18,23 +20,32 @@ void main (int argc, char *argv[])
 
   //get the input
   s_procs_completed = dstrtol(argv[1], NULL, 10);
-  s2_mbox = dstrtol(argv[2], NULL, 10);
+  h_mem = dstrtol(argv[2], NULL, 10);
 
-
-
-  //open mail box
-
-  if(mbox_open(s2_mbox) != MBOX_SUCCESS){
-    Printf("Open the mailbox failed, check the condition");
+  //map
+  mol = (molecules *) shmat(h_mem);
+  if(mol == NULL){
+    Printf("Map failed in SO injection \n");
     Exit();
   }
 
-  //send the msg
-  mbox_send(s2_mbox, 2, "S2");
+  //open mail box
 
+  if(mbox_open(mol->s2_mbox) != MBOX_SUCCESS){
+    Printf("Open the mailbox failed, check the condition\n");
+    Exit();
+  }
+
+  //send the msg, injection
+  /*
+  if(mbox_send(mol->s2_mbox, 2, (void *)"S2") != MBOX_SUCCESS){
+    Printf("Injection S2 failed, current PID is %d \n", getpid());
+  }
+*/
+  mbox_send(mol->s2_mbox, 2, (void *)"S2");
   //close the mailbox
-  if(mbox_close(s2_mbox) != MBOX_SUCCESS){
-    Printf("Failed to close s2 mailbox");
+  if(mbox_close(mol->s2_mbox) != MBOX_SUCCESS){
+    Printf("Failed to close s2 mailbox\n");
     Exit();
   }
 

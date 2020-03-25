@@ -13,24 +13,12 @@ void main (int argc, char *argv[])
   //char h_mem_str[10];             // Used as command-line argument to pass mem_handle to new processes
   char s_procs_completed_str[10]; // Used as command-line argument to pass page_mapped handle to new processes
 
-  //init different semaphores to the molecules
-  mbox_t s2_mbox;
-  mbox_t s_mbox;
-  mbox_t o2_mbox;
-  mbox_t c2_mbox;
-  mbox_t co_mbox;
-  mbox_t so4_mbox;
   
   int i;
 
   
   //correpsonding str
-  char s2_mbox_str[10];
-  char s_mbox_str[10];
-  char o2_mbox_str[10];
-  char c2_mbox_str[10];
-  char co_mbox_str[10];
-  char so4_mbox_str[10];
+
 
 
   //molecule num
@@ -55,6 +43,19 @@ void main (int argc, char *argv[])
   char s_left_str[10];
   char num_str[10];
 
+
+  //temp int
+  int tempSO4;
+  int co_break;
+  int s2_break;
+  
+  //share mem section
+  char h_mem_str[10];
+  unsigned int h_mem;
+  molecules *mol;
+
+
+  //Printf("argc: %d", argc);
   if (argc != 3) {
     Printf("Usage: "); Printf(argv[0]); Printf(" <number of processes to create> \n");
     Exit();
@@ -63,105 +64,119 @@ void main (int argc, char *argv[])
   s2 = dstrtol(argv[1], NULL, 10); // the "10" means base 10
   co = dstrtol(argv[2], NULL, 10); // the "10" means base 10
 
+
   // Convert string from ascii command line argument to integer number
   
   Printf("Creating %d S2s and %d COs.\n", s2, co);
 
-  // Initiallize the value of semaphore
-  if ((s_procs_completed = sem_create(-(numprocs-1))) == SYNC_FAIL) {
-    Printf("Bad sem_create in "); Printf(argv[0]); Printf("\n");
+
+  //create share mem
+  if((h_mem = shmget()) == 0){
+    Printf("Error: Allocation of shared mem failed\n");
     Exit();
   }
 
+
+  //map the shared mem to the struct
+  if((mol = (molecules *)shmat(h_mem)) == NULL){
+    Printf("Error: map the share mem failed");
+    Exit();
+  }
+
+
+
   //calculate how many so4 will be formed
   s = 2 * s2;
-  o2 = floor(co / 4) * 2;
-  c2 = floor(co / 4) * 2; 
+  o2 = (int) (co / 4) * 2;
+  c2 = (int) (co / 4) * 2; 
   
   
 
-  so4 = min(floor(o2 / 2), s);
+  so4 = min((int) (o2 / 2), s);
 
   o2_left = o2 - 2 * so4; 
-  s_left = s - so4;
-  s2_left = floor(s2_left / 2);
-  c2_left = floor(co / 2);
-  co_left = co - floor(co / 4);
+  s2_left = (int) (s2*2 - so4) /2;
+  s_left = s - s2_left *2 - so4;
+
+  c2_left = (int) (co / 2);
+  co_left = co - (int) (co / 4) * 4;
 
 
+  tempSO4 = so4;
 
   //create the mailboxes
-  if((co_mbox = mbox_create()) == MBOX_FAIL){
+  if((mol->co_mbox = mbox_create()) == MBOX_FAIL){
     Printf("Create co mbox failed");
     Exit();
   }
 
     //create the mbox
-  if((s_mbox = mbox_create()) == MBOX_FAIL){
+  if((mol->s_mbox = mbox_create()) == MBOX_FAIL){
     Printf("Create S  mbox failed");
     Exit();
   }
   //create the mbox
-  if((o2_mbox = mbox_create()) == MBOX_FAIL){
+  if((mol->o2_mbox = mbox_create()) == MBOX_FAIL){
     Printf("Create o2 mbox failed");
     Exit();
   }
   //create the mbox
-  if((so4_mbox = mbox_create()) == MBOX_FAIL){
+  if((mol->so4_mbox = mbox_create()) == MBOX_FAIL){
     Printf("Create so4 mbox failed");
     Exit();
   }
   //create the mbox
-  if((s2_mbox = mbox_create()) == MBOX_FAIL){
+  if((mol->s2_mbox = mbox_create()) == MBOX_FAIL){
     Printf("Create s2 mbox failed");
     Exit();
   }
   //create the mbox
-  if((c2_mbox = mbox_create()) == MBOX_FAIL){
+  if((mol->c2_mbox = mbox_create()) == MBOX_FAIL){
     Printf("Create co mbox failed");
     Exit();
   }
 
   //Open the mailboxes created
-  if(mbox_open(co_mbox) == MBOX_FAIL){
+  if(mbox_open(mol->co_mbox) == MBOX_FAIL){
     Printf("open s2 mbox failed");
     Exit();
   }
 
-  if(mbox_open(s2_mbox) == MBOX_FAIL){
+  if(mbox_open(mol->s2_mbox) == MBOX_FAIL){
     Printf("open h2 mbox failed");
     Exit();
   }
 
-  if(mbox_open(o2_mbox) == MBOX_FAIL){
+  if(mbox_open(mol->o2_mbox) == MBOX_FAIL){
     Printf("open o2 mbox failed");
     Exit();
   }
 
-  if(mbox_open(so4_mbox) == MBOX_FAIL){
+  if(mbox_open(mol->so4_mbox) == MBOX_FAIL){
     Printf("open so2 mbox failed");
     Exit();
   }
 
-  if(mbox_open(s_mbox) == MBOX_FAIL){
+  if(mbox_open(mol->s_mbox) == MBOX_FAIL){
     Printf("open h2so4 mbox failed");
     Exit();
   }
-  if(mbox_open(c2_mbox) == MBOX_FAIL){
+  if(mbox_open(mol->c2_mbox) == MBOX_FAIL){
     Printf("open co mbox failed");
     Exit();
   }
+/*
+  mol->s2_mbox = s2_mbox;
+  mol->co_mbox = co_mbox;
+  mol->o2_mbox = o2_mbox;
+  mol->s_mbox = s_mbox;
+  mol->so4_mbox = so4_mbox;
 
-
-
+*/
   //transfer to chars
   ditoa(s_procs_completed,s_procs_completed_str);
-  ditoa(s2_mbox, s2_mbox_str);
-  ditoa(co_mbox, co_mbox_str);
-  ditoa(s_mbox, s_mbox_str);
-  ditoa(so4_mbox, so4_mbox_str);
-  ditoa(c2_mbox, c2_mbox_str);
-  ditoa(o2_mbox, o2_mbox_str);
+
+  ditoa(h_mem, h_mem_str);
 
 
 
@@ -204,60 +219,73 @@ void main (int argc, char *argv[])
 */
   //you should not have any loops inside the generator and reaction programs. Instead, your makeprocs process will create the proper number of each type of process.
   //s2 injection
+  /*
   for(i = 0; i < s2; i ++){
-    process_create(S2INJECTION, s_procs_completed_str, s2_mbox_str, NULL);
+    process_create(S2INJECTION, 0,0,s_procs_completed_str, h_mem_str, NULL);
   }
 
   //co injection
   for(i = 0; i < co; i ++){
-    process_create(COINJECTION, s_procs_completed_str, co_mbox_str, NULL);
+    process_create(COINJECTION, 0,0,s_procs_completed_str, h_mem_str, NULL);
   }
 
   //first reaction S2 -> S + S
   for(i = 0; i < s2; i ++){
-    process_create(S2BREAK, s_procs_completed_str, s2_mbox_str, s_mbox_str, NULL);
+    process_create(S2BREAK, 0,0,s_procs_completed_str, h_mem_str, NULL);
   }
 
   //second co break
-  for(i = 0; i < floor(co / 4); i ++){
-    process_create(COBREAK, s_procs_completed_str, co_mbox_str, o2_mbox_str, c2_mbox_str, NULL);
+  for(i = 0; i < (int) (co / 4); i ++){
+    process_create(COBREAK, 0,0,s_procs_completed_str, h_mem_str, NULL);
   }
 
   //third forming of so4
   for(i = 0; i < so4; i ++){
     ditoa(i, num_str);
-    process_create(SO4FORM, s_procs_completed_str, s_mbox_str, o2_mbox_str, so4_mbox_str, num_str, NULL);
+    process_create(SO4FORM, 0,0,s_procs_completed_str, h_mem_str, num_str, NULL);
+  }
+*/
+  s2_break = s2;
+  co_break = (int) co / 4;
+
+  //Printf("s2, c0, s2_break, co_break, tempS04: %d, %d, %d, %d, %d\n", s2, co, s2_break, co_break, tempSO4);
+  while(s2 + co + s2_break + co_break + tempSO4){
+    if(s2 > 0){
+      process_create(S2INJECTION, 0,0,s_procs_completed_str, h_mem_str, NULL);
+      s2 --;
+    }
+
+    if(s2_break > 0){
+      process_create(S2BREAK, 0,0,s_procs_completed_str, h_mem_str, NULL);
+      s2_break --;
+    }
+    //inject the 4 cos before the break
+
+    for(i = 0; i < 4; i ++){
+      if(co > 0){
+        process_create(COINJECTION, 0,0,s_procs_completed_str, h_mem_str, NULL);
+        co --;
+      }
+    }
+
+
+
+
+    //break requires 4 co molecules
+    if(co_break > 0){
+      process_create(COBREAK, 0,0,s_procs_completed_str, h_mem_str, NULL);
+      co_break --;
+    }
+    
+    if(tempSO4 > 0){
+      ditoa(so4 - tempSO4, num_str);
+      process_create(SO4FORM, 0,0,s_procs_completed_str, h_mem_str, num_str, NULL);
+      tempSO4 --;
+    }
   }
 
-  //close the mailboxes created
-  if(mbox_close(co_mbox) == MBOX_FAIL){
-    Printf("close s2 mbox failed");
-    Exit();
-  }
 
-  if(mbox_close(s2_mbox) == MBOX_FAIL){
-    Printf("close h2 mbox failed");
-    Exit();
-  }
 
-  if(mbox_close(o2_mbox) == MBOX_FAIL){
-    Printf("close o2 mbox failed");
-    Exit();
-  }
-
-  if(mbox_close(so4_mbox) == MBOX_FAIL){
-    Printf("close so2 mbox failed");
-    Exit();
-  }
-
-  if(mbox_close(s_mbox) == MBOX_FAIL){
-    Printf("close h2so4 mbox failed");
-    Exit();
-  }
-  if(mbox_close(c2_mbox) == MBOX_FAIL){
-    Printf("close co mbox failed");
-    Exit();
-  }
 
 
   // And finally, wait until all spawned processes have finished.
@@ -267,5 +295,5 @@ void main (int argc, char *argv[])
   }
 
   Printf("%d S2's left over. %d CO's left over. %d S's left over. %d O2's left over.", s2_left, co_left, s_left, o2_left);
-  Printf("%d H2SO4's created.\n",  so4);
+  Printf("%d SO4's created.\n",  so4);
 }

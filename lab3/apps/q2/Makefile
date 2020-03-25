@@ -1,18 +1,18 @@
 default:
 	cd makeprocs; make
-	cd so4_injection; make
-	cd h2o_injection; make
-	cd h2o_break; make
-	cd so4_break; make
-	cd h2so4_form; make
+	cd co_injection; make
+	cd s2_injection; make
+	cd co_break; make
+	cd s2_break; make
+	cd so4_form; make
 
 clean:
 	cd makeprocs; make clean
-	cd so4_injection; make clean
-	cd h2o_injection; make clean
-	cd h2o_break; make clean
-	cd so4_break; make clean
-	cd h2so4_form; make clean
+	cd co_injection; make clean
+	cd s2_injection; make clean
+	cd co_break; make clean
+	cd s2_break; make clean
+	cd so4_form; make clean
 
 run:
-	cd ../../bin; dlxsim -x os.dlx.obj -a -u makeprocs.dlx.obj 6 3; ee469_fixterminal
+	cd ../../bin; dlxsim -x os.dlx.obj -a -u makeprocs.dlx.obj 3 6; ee469_fixterminal

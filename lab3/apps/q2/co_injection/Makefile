@@ -1,5 +1,5 @@
-SRCS=so4_injection.c
-EXEC=so4_injection.dlx.obj
+SRCS=co_injection.c
+EXEC=co_injection.dlx.obj
 
 include ../Makerules
 

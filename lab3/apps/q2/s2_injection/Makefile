@@ -1,5 +1,5 @@
-SRCS=h2o_injection.c
-EXEC=h2o_injection.dlx.obj
+SRCS=s2_injection.c
+EXEC=s2_injection.dlx.obj
 
 include ../Makerules
 

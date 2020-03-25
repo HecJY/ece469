@@ -8,39 +8,49 @@ void main (int argc, char *argv[])
   sem_t s_procs_completed; // Semaphore to signal the original process that we're done
 
 
-  //init the sem 
-  
-  mbox_t s_mbox;
-  mbox_t o2_mbox;
-  mbox_t so4_mbox;
+  unsigned int h_mem;
+  molecules *mol;
+
+  //init the message in the mbox
+  char msg[100];
   int num;
 
-  char* msg;
-
-  if (argc != 6) { 
-    Printf("Usage: "); Printf(argv[0]); Printf(" h2so4 form failed\n"); 
+  if (argc != 4) { 
+    Printf("Usage: "); Printf(argv[0]); Printf(" <handle_to_shared_memory_page> <handle_to_page_mapped_semaphore>\n"); 
     Exit();
   } 
-
-
-
-
-  //convert the command line output
   s_procs_completed = dstrtol(argv[1], NULL, 10);
+  h_mem = dstrtol(argv[2], NULL, 10);
+  num = dstrtol(argv[3], NULL, 10);
+    //map
+  mol = (molecules *) shmat(h_mem);
+  if(mol == NULL){
+    Printf("Map failed in SO injection \n");
+    Exit();
+  }
 
-  s_mbox = dstrtol(argv[2], NULL, 10);
-  o2_mbox = dstrtol(argv[3], NULL, 10);
-  so4_mbox = dstrtol(argv[4], NULL, 10);
-  num = dstrtol(argv[5], NULL, 10);
 
   /*Reaction here S + 2 O2 -> SO4  */ 
-  mbox_recv(s_mbox, NULL, msg);
-  mbox_recv(o2_mbox, NULL, msg);
-  mbox_recv(o2_mbox, NULL, msg);
+  mbox_open(mol->s_mbox);
+  mbox_recv(mol->s_mbox, 1, msg);
+  mbox_close(mol->s2_mbox);
+
+
+  mbox_open(mol->o2_mbox);
+  mbox_recv(mol->o2_mbox, 2, msg);
+  mbox_recv(mol->o2_mbox, 2, msg);
+
+  mbox_close(mol->o2_mbox);
+
+  mbox_open(mol->so4_mbox);
+
+
 
   //produce the so4
-  mbox_send(so4_mbox, NULL, "SO4");
+  mbox_send(mol->so4_mbox, 3, "SO4");
 
+
+  mbox_close(mol->so4_mbox);
 
 
   

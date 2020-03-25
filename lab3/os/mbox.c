@@ -29,6 +29,7 @@ void MboxModuleInit() {
   for (i = 0; i < MBOX_NUM_BUFFERS; i++){
     mbox_messages[i].inuse = 0;
   }
+
 }
 
 //-------------------------------------------------------
@@ -63,12 +64,12 @@ mbox_t MboxCreate() {
 
   // Create 2 conditional variable
   if (mboxes[mbox].notfull = CondCreate(mboxes[mbox].lock) == SYNC_FAIL){
-    printf("ERROR: Could not create conditional varaiables\n");
+    printf("ERROR: Could not create conditional varaiables--not full \n");
     exitsim();
   } 
   
   if (mboxes[mbox].notempty = CondCreate(mboxes[mbox].lock) == SYNC_FAIL){
-    printf("ERROR: Could not create conditional varaiables\n");
+    printf("ERROR: Could not create conditional varaiables-- not empty \n");
     exitsim();
   } 
     
@@ -196,8 +197,8 @@ int MboxClose(mbox_t handle) {
 //-------------------------------------------------------
 int MboxSend(mbox_t handle, int length, void* message) {
   // Get Pid
-  int currentPid = GetCurrentPid();
-  int proc_inuse = 0;
+  //int currentPid = GetCurrentPid();
+  //int proc_inuse = 0;
   int i;
   Link* l;
 
@@ -210,10 +211,13 @@ int MboxSend(mbox_t handle, int length, void* message) {
   if(mboxes[handle].inuse == 0){
     return MBOX_FAIL;
   }
-  
+
+
+
+
   //If mboxes is Full, wait not Full
   if(mboxes[handle].message_q.nitems >= MBOX_MAX_BUFFERS_PER_MBOX){
-    CondWait(mboxes[handle].notfull);
+    CondHandleWait(mboxes[handle].notfull);
   }
 
   // Get unused buffer
@@ -279,6 +283,11 @@ int MboxRecv(mbox_t handle, int maxlength, void* message) {
   }
 
   if(mboxes[handle].inuse == 0){
+    return MBOX_FAIL;
+  }
+
+  //check the mbox is open or not
+  if(mboxes[handle].proc[currentPid] == 0){
     return MBOX_FAIL;
   }
 

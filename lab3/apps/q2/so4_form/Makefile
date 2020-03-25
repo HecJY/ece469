@@ -1,5 +1,5 @@
-SRCS=h2so4_form.c
-EXEC=h2so4_form.dlx.obj
+SRCS=so4_form.c
+EXEC=so4_form.dlx.obj
 
 include ../Makerules
 
