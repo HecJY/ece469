@@ -148,8 +148,9 @@ void ProcessFixRunQueues();
 int ProcessCountAutowake();
 void ProcessPrintRunQueues();
 void ProcessAutoWake();
+
+//more helper functions 
 int ProcessCheckRunQueue();
-int ProcessAutowake();
 
 
 

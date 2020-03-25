@@ -8,8 +8,6 @@ void main (int argc, char *argv[])
   //uint32 h_mem;            // Handle to the shared memory page
   sem_t s_procs_completed; // Semaphore to signal the original process that we're done
 
-  //init the mailbox
-  //mbox_t s2_mbox;
   unsigned int h_mem;
   molecules *mol;
 
@@ -29,28 +27,29 @@ void main (int argc, char *argv[])
     Exit();
   }
 
+
   //open mail box
 
-  if(mbox_open(mol->s2_mbox) != MBOX_SUCCESS){
-    Printf("Open the mailbox failed, check the condition\n");
+  if(mbox_open(mol->co_mbox) != MBOX_SUCCESS){
+    Printf("Open the CO mailbox failed, check the condition\n");
     Exit();
   }
 
-  //send the msg, injection
-  /*
-  if(mbox_send(mol->s2_mbox, 2, (void *)"S2") != MBOX_SUCCESS){
-    Printf("Injection S2 failed, current PID is %d \n", getpid());
+  //send the msg
+  if(mbox_send(mol->co_mbox, 2, (void *) "CO") != MBOX_SUCCESS){
+    Printf("Injection C0 failed, current PID is %d \n", getpid());
+    Exit();
   }
-*/
-  mbox_send(mol->s2_mbox, 2, (void *)"S2");
+
+
   //close the mailbox
-  if(mbox_close(mol->s2_mbox) != MBOX_SUCCESS){
-    Printf("Failed to close s2 mailbox\n");
+  if(mbox_close(mol->co_mbox) != MBOX_SUCCESS){
+    Printf("Failed to close s2 mailbox");
     Exit();
   }
 
 
-  Printf("S2 injected into Radeon atmosphere, PID: %d\n", getpid());
+  Printf("CO injected into Radeon atmosphere, PID: %d\n", getpid());
   
   
 

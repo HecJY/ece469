@@ -1,2 +1,0 @@
-work/co_break.o: co_break.c ../../../include/usertraps.h \
- ../../../include/misc.h ../include/producer.h

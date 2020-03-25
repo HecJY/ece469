@@ -68,19 +68,9 @@ void main (int argc, char *argv[])
     Exit();
   }
 
- 
-
-
-
-
-  
-
   //produce 2 c2
-  mbox_send(mol->c2_mbox, 2, (void *) "C2") != MBOX_SUCCESS);
-  mbox_send(mol->c2_mbox, 2, (void *) "C2") != MBOX_SUCCESS);
-
-
-
+  mbox_send(mol->c2_mbox, 2, (void *) "C2");
+  mbox_send(mol->c2_mbox, 2, (void *) "C2");
 
   if(mbox_close(mol->c2_mbox) != MBOX_SUCCESS){
     Printf("Close the mailbox failed, check the condition");

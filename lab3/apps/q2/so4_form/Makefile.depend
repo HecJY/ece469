@@ -1,2 +1,0 @@
-work/so4_form.o: so4_form.c ../../../include/usertraps.h \
- ../../../include/misc.h ../include/producer.h

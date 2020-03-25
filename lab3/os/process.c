@@ -211,21 +211,26 @@ void ProcessSchedule () {
   PCB *pcb=NULL;
   int i=0;
   Link *l=NULL;
-  PCB* hpPCB = NULL;
-  // RUNTIME
-  currentPCB->run_time += ClkGetCurJiffies() - currentPCB->switch_time; // Q3: time
+  PCB* highest_P = NULL;
+
+  int curJ = ClkGetCurJiffies();
+  //calculate the run_time
+  currentPCB->run_time += curJ - currentPCB->switch_time; 
 
   dbprintf ('p', "Now entering ProcessSchedule (cur=0x%x, %d ready)\n", (int)currentPCB, AQueueLength((currentPCB->l)->queue));
-  // PINFO
+  // q3 solution here
   if(currentPCB->pinfo) {
-    printf(PROCESS_CPUSTATS_FORMAT, GetPidFromAddress(currentPCB), currentPCB->run_time, currentPCB->priority); // Q3: time
+    printf(PROCESS_CPUSTATS_FORMAT, GetPidFromAddress(currentPCB), currentPCB->run_time, currentPCB->priority);
   }
-  ///////////////////////////////////////////////////////
-  // HIGHEST PRIO IDLE?
-  hpPCB = ProcessFindHighestPriorityPCB();
-  if(ProcessCheckRunQueue() == 0 || hpPCB == idlePCB) {
-    if(ProcessCountAutowake() == 0) { // if no autowake
-      if(!AQueueEmpty(&waitQueue)) { // if items left in wait queue and no autowake
+
+
+  //check if the highest prio pcb is the idle pcb
+  highest_P = ProcessFindHighestPriorityPCB();
+  if(ProcessCheckRunQueue() == 0 || highest_P == idlePCB) {
+    //check whether this is a autowakre process
+    if(ProcessCountAutowake() == 0) { 
+
+      if(!AQueueEmpty(&waitQueue)) { 
         printf("FATAL ERROR: no runnable processes, but there are sleeping processes waiting!\n");
         l = AQueueFirst(&waitQueue);
         while(l != NULL) {
@@ -236,35 +241,49 @@ void ProcessSchedule () {
         exitsim();
       }
       printf ("No runnable processes - exiting!\n");
-      exitsim ();	// NEVER RETURNS
+
+      //else for none
+      exitsim ();
     }
   }
-  // ESTCPU, PRIORITY, YIELD
+  
+
+  //update the currentPCB's prio estcpu quantu
   if(currentPCB->flags & PROCESS_STATUS_RUNNABLE) {
     if(currentPCB->yield == 0) {
       currentPCB->estcpu += 1.0;
       ProcessRecalcPriority(currentPCB);
     }
-    else { currentPCB->yield = 0; }
-    // PLACE IN NEW QUEUE
+    else { 
+      currentPCB->yield = 0; 
+    }
+
     ProcessInsertRunning(currentPCB);
   }
-  // DECAY
-  if(ClkGetCurJiffies() > decay_time) {
+
+  // decay estcpu
+  if(curJ > decay_time) {
     ProcessDecayAllEstcpus();
     ProcessFixRunQueues();
-    decay_time = TIME_PER_CPU_WINDOW + ClkGetCurJiffies();
+
+    //last time = current time
+    decay_time = TIME_PER_CPU_WINDOW + curJ;
   }
-  // WAKEUP SLEEPING
+  
+
   ProcessAutowake();
-  // SET PCB
-  hpPCB = ProcessFindHighestPriorityPCB();
-  if(currentPCB == hpPCB) {
+  // find the highest prio
+  highest_P = ProcessFindHighestPriorityPCB();
+
+  //of highest prio = cur
+  if(currentPCB == highest_P) {
     ProcessInsertRunning(currentPCB);
-    hpPCB = ProcessFindHighestPriorityPCB();
+    highest_P = ProcessFindHighestPriorityPCB();
   }
-  currentPCB = hpPCB;
-  ///////////////////////////////////////////////////////
+
+  //set
+  currentPCB = highest_P;
+  currentPCB->switch_time = curJ;
 
   dbprintf ('p',"About to switch to PCB 0x%x,flags=0x%x @ 0x%x\n", (int)currentPCB, currentPCB->flags, (int)(currentPCB->sysStackPtr[PROCESS_STACK_IAR]));
 
@@ -280,7 +299,7 @@ void ProcessSchedule () {
     ProcessFreeResources(pcb);
   }
   dbprintf ('p', "Leaving ProcessSchedule (cur=0x%x)\n", (int)currentPCB);
-  currentPCB->switch_time = ClkGetCurJiffies(); // Q3: time
+
 }
 
 
@@ -1222,15 +1241,20 @@ void ProcessFixRunQueues(){
   }
 }
 
+//this learned from rtswan
 int ProcessCountAutowake(){
-  Queue *q = &waitQueue;
-  PCB* pcb;
-  Link* link = AQueueFirst(q);
 
+
+  Queue *q_w = &waitQueue;
+  PCB* pcb;
+  Link* link = AQueueFirst(q_w);
+  
   int num_autowakes = 0;
 
+  //iterate through to find the number of autowakes
   while(link != NULL){
     pcb = (PCB *) AQueueObject(link);
+    //if the flag is set
     if(pcb -> auto_wake){
       num_autowakes ++;
     }

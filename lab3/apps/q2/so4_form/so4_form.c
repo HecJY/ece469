@@ -54,7 +54,7 @@ void main (int argc, char *argv[])
 
 
   
-  Printf("(%d) s + 2*O2 -> SO4 reacted, PID: %d\n", num, getpid());
+  Printf("S + 2 O2 -> SO4 reacted, PID: %d\n", num, getpid());
   if(sem_signal(s_procs_completed) != SYNC_SUCCESS) {
     Printf("Bad semaphore s_procs_completed (%d) in ", s_procs_completed); Printf(argv[0]); Printf(", exiting...\n");
     Exit();

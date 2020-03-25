@@ -36,11 +36,11 @@ void main (int argc, char *argv[])
   int co_left;
 
 
-  char o2_left_str[10];
-  char c2_left_str[10];
-  char s2_left_str[10];
-  char co_left_str[10];
-  char s_left_str[10];
+  //char o2_left_str[10];
+  //char c2_left_str[10];
+  //char s2_left_str[10];
+  //char co_left_str[10];
+  //char s_left_str[10];
   char num_str[10];
 
 
@@ -173,15 +173,6 @@ void main (int argc, char *argv[])
   mol->so4_mbox = so4_mbox;
 
 */
-  //transfer to chars
-  ditoa(s_procs_completed,s_procs_completed_str);
-
-  ditoa(h_mem, h_mem_str);
-
-
-
-
-
   // Create semaphore to not exit this process until all other processes 
   // have signalled that they are complete.  To do this, we will initialize
   // the semaphore to (-1) * (number of signals), where "number of signals"
@@ -193,7 +184,10 @@ void main (int argc, char *argv[])
     Exit();
   }
 
+  //transfer to chars
+  ditoa(s_procs_completed,s_procs_completed_str);
 
+  ditoa(h_mem, h_mem_str);
   // Now we can create the processes.  Note that you MUST end your call to
   // process_create with a NULL argument so that the operating system
   // knows how many arguments you are sending.

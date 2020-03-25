@@ -1,2 +1,0 @@
-work/s2_injection.o: s2_injection.c ../../../include/usertraps.h \
- ../../../include/misc.h ../include/producer.h
