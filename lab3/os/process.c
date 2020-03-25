@@ -348,14 +348,7 @@ void ProcessWakeup (PCB *wakeup) {
   ProcessRecalcPriority(wakeup);
   
   //Insert to proper run queue
-  if ((wakeup->l = AQueueAllocLink(wakeup)) == NULL) {
-    printf("FATAL ERROR: could not get link for wakeup PCB in ProcessWakeup!\n");
-    exitsim();
-  }
-  if (AQueueInsertLast((Queue *)&runQueue, wakeup->l) != QUEUE_SUCCESS) {
-    printf("FATAL ERROR: could not insert link into runQueue in ProcessWakeup!\n");
-    exitsim();
-  }
+  ProcessInsertRunning(wakeup);
 }
 
 
@@ -485,7 +478,7 @@ int ProcessFork (VoidFunc func, uint32 param, int pnice, int pinfo,char *name, i
   pcb->wake_time = 0;
   pcb->estcpu = 0;
   pcb->sleep_time = 0;
-
+  pcb->run_time = 0;
   //----------------------------------------------------------------------
   // This section initializes the memory for this process
   //----------------------------------------------------------------------
@@ -1087,18 +1080,15 @@ void Forkidle(){
 }
 //helper functions for q4
 void ProcessRecalcPriority(PCB *pcb){
-  int cur_prio = pcb->base_priority + pcb->estcpu / 4 + 2*pcb->pnice;
-  int max_prio = MAX_PRIORITY;
   if(pcb->flags & PROCESS_TYPE_USER){
-    max_prio = USER_MAX_PRIORITY;
+    pcb->priority = USER_MIN_PRIORITY + pcb->base_priority + pcb->estcpu/4.0 + 2*pcb->pnice;
   }
   else if(pcb->flags & PROCESS_TYPE_SYSTEM){
-    max_prio = KERNEL_MAX_PRIORITY;
+    pcb->priority = KERNEL_MIN_PRIORITY + pcb->base_priority + pcb->estcpu/4.0 + 2*pcb->pnice;
   }
-
-  pcb->priority = (cur_prio <= max_prio) ? ((cur_prio >= pcb->base_priority) ? (cur_prio) : (pcb->base_priority)) : (max_prio);
-
-  if(pcb->base_priority == MAX_PRIORITY){
+  else
+  {
+    /* code */
     pcb->priority = MAX_PRIORITY;
   }
 }
@@ -1298,6 +1288,7 @@ void ProcessAutoWake(){
 
 int ProcessCheckRunQueue() {
   int i = 0;
+  
   Queue* currQueue = NULL;
   for(i = 0; i < NUM_QUEUE; i++) {
     currQueue = &runQueue[i];

@@ -1,0 +1,2 @@
+work/spawn_me.o: spawn_me.c ../../../include/usertraps.h \
+ ../../../include/misc.h ../include/spawn.h
