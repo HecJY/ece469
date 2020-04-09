@@ -1,0 +1,2 @@
+work/co_injection.o: co_injection.c ../../../include/usertraps.h \
+ ../../../include/misc.h ../include/producer.h

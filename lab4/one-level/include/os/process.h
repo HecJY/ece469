@@ -11,7 +11,7 @@
 
 #include "dlxos.h"
 #include "queue.h"
-#include "clock.h"
+#include "memory_constants.h"
 
 #define PROCESS_FAIL 0
 #define PROCESS_SUCCESS 1
@@ -39,33 +39,12 @@ typedef struct PCB {
   uint32	sysStackArea;	// System stack area for this process
   unsigned int	flags;
   char		name[80];	// Process name
-  uint32	pagetable[16];	// Statically allocated page table
+  uint32	pagetable[/* Put the size of the L1 page table here */]; // Statically allocated page table
   int		npages;		// Number of pages allocated to this process
   Link		*l;		// Used for keeping PCB in queues
-
-  int           pinfo;          // Turns on printing of runtime stats
-  int           pnice;          // Used in priority calculation
-  
-  //addtional attributes
-  int resume; //The process resumes, switch 
-  //int jiffies; //The total jiffies the process has run
-  int sleep_time; //process sleeps time
-  int priority;
-  double estcpu;
-  int num_quanta;
-  int run_time; //in jiffies
-  int switch_time;
-  int wake_time;
-  int base_priority;
-
-
-  //flags (0 is not, 1 is confirmed)
-  int auto_wake; //process wakes from sleep status
-  int yield;
-  int idle;
-
-
 } PCB;
+
+extern PCB	*currentPCB;
 
 // Offsets of various registers from the stack pointer in the register
 // save frame.  Offsets are in WORDS (4 byte chunks)
@@ -80,81 +59,49 @@ typedef struct PCB {
 #define	PROCESS_STACK_PTBASE	(PROCESS_STACK_IAR+4)
 #define	PROCESS_STACK_PTSIZE	(PROCESS_STACK_IAR+5)
 #define	PROCESS_STACK_PTBITS	(PROCESS_STACK_IAR+6)
+#define PROCESS_STACK_USER_STACKPOINTER  (PROCESS_STACK_IREG + 29) // r29 is user stack pointer
 #define	PROCESS_STACK_PREV_FRAME 10	// points to previous interrupt frame
 #define	PROCESS_STACK_FRAME_SIZE 85	// interrupt frame is 85 words
 #define PROCESS_MAX_NAME_LENGTH  100    // Maximum length of an executable's filename
-#define SIZE_ARG_BUFF  	1024		// Max number of characters in the
+#define SIZE_ARG_BUFF  	256             // Max number of characters in the
 					// command-line arguments
-#define MAX_ARGS	128		// Max number of command-line
+#define MAX_ARGS	10		// Max number of command-line
 					// arguments
 
 // Number of jiffies in a single process quantum (i.e. how often ProcessSchedule is called)
 #define PROCESS_QUANTUM_JIFFIES  CLOCK_PROCESS_JIFFIES
+// Number of jiffies that have to pass before decaying all estcpu's
+#define PROCESS_ESTCPU_DECAY_JIFFIES  ( PROCESS_QUANTUM_JIFFIES * 10 )
 
-// Use this format string for printing CPU stats
-#define PROCESS_CPUSTATS_FORMAT "CPUStats: Process %d has run for %d jiffies, prio = %d\n"
-
-//define some constants
-#define MAX_PRIORITY 127
-
-//from 0 49, total 50
-#define KERNEL_MIN_PRIORITY 0
-#define KERNEL_MAX_PRIORITY 49
-
-#define USER_MIN_PRIORITY 50
-#define USER_MAX_PRIORITY 127
-
-
-#define PRIORITY_PER_QUEUE 4
-#define NUM_QUEUE 32
-
-//decay
-#define TIME_PER_CPU_WINDOW 100
-#define CPU_WINDOWS_BETWEEN_DECAYS 10
-
-
-#define PROCESS_LOAD 1
+//---------------------------------------------------------
+// Put any #define-d constants that you create here.  Be
+// sure to prefix their names with "PROCESS_" so the
+// grader knows that they are defined in this file.
+//---------------------------------------------------------
 
 
 
+//---------------------------------------------------------
+// Existing function Prototypes
+//---------------------------------------------------------
 
-
-extern PCB	*currentPCB;
-
-int ProcessFork (VoidFunc func, uint32 param, int pnice, int pinfo,char *name, int isUser);
-extern void	ProcessSchedule ();
-extern void	ContextSwitch(void *, void *, int);
-extern void	ProcessSuspend (PCB *);
-extern void	ProcessWakeup (PCB *);
-extern void	ProcessSetResult (PCB *, uint32);
-extern void	ProcessSleep ();
-extern void     ProcessDestroy(PCB *pcb);
+int ProcessFork (VoidFunc func, uint32 param, char *name, int isUser);
+void ProcessSchedule ();
+void ContextSwitch(void *, void *, int);
+void ProcessSuspend (PCB *);
+void ProcessSleep(); // A trap in dlxos.s, not a function
+void ProcessWakeup (PCB *);
+void ProcessSetResult (PCB *, uint32);
+void ProcessUserSleep ();
+void ProcessDestroy(PCB *pcb);
 extern unsigned GetCurrentPid();
-void process_create(char *name, ...);
 int GetPidFromAddress(PCB *pcb);
+void ProcessKill();
 
-void ProcessUserSleep(int seconds);
-void ProcessYield();
-
-//define the helper functions for q4
-void ProcessRecalcPriority(PCB *pcb);
-inline int WhichQueue(PCB *pcb);
-int ProcessInsertRunning(PCB *pcb);
-void ProcessDecayEstcpu(PCB *pcb);
-void ProcessDecayEstcpuSleep(PCB *pcb, int time_asleep_jiffies);
-PCB *ProcessFindHighestPriorityPCB();
-void ProcessDecayAllEstcpus();
-void ProcessFixRunQueues();
-int ProcessCountAutowake();
-void ProcessPrintRunQueues();
-int ProcessAutoWake();
-
-//more helper functions 
-int ProcessCheckRunQueue();
+//-------------------------------------------------------
+// Put any functions prototypes that you define here.
+//-------------------------------------------------------
 
 
 
-//define helper functions for q5
-void Idle();
-void Forkidle();
 #endif	/* __process_h__ */
