@@ -12,7 +12,7 @@
 #include "queue.h"
 
 // num_pages = size_of_memory / size_of_one_page
-static uint32 freemap[/*size*/];
+static uint32 freemap[NUM_PAGES];
 static uint32 pagestart;
 static int nfreepages;
 static int freemapmax;
@@ -56,7 +56,53 @@ int MemoryGetSize() {
 //
 //----------------------------------------------------------------------
 void MemoryModuleInit() {
+/*
+pagestart = first page since last os page
+freemapmax = max index for freemap array
+nfreepages = how many free pages available in the system not including os pages
+set every entry in freemap to 0
+for all free pages:
+MemorySetFreemap()
+*/
+  int j; // current page index 
+  int i;
+  int freepagemax = MEM_MAX_PAGES;
+  int pages = NUM_PAGES;
+  nfreepages = 0;
+  
+
+  //pagestart = first page since last os page
+  pagestart = (lastosaddress + MEM_PAGESIZE - 4) / MEM_PAGESIZE;
+
+
+  //set every entry in freemap to 0
+  for(i = 0; i < pages; i++){
+    freemap[i] = 0;
+  }
+  
+  //for all free pages, increment nfreepages
+  for(j = pagestart; j < freepagemax; j ++){
+    //set the freemap here, the bit is 1 (the beginning)
+    MemorySetFreemap(j, 1);
+
+    //increment the counter
+    nfreepages += 1;
+  }
+
+
 }
+//set freemap 
+inline void MemorySetFreemap(int page, int bit){
+  uint32 page_num = page / 32;
+  uint32 bitpos = page % 32; //offset
+
+  freemap[page_num] = freemap[page_num] & invert(1 << bitpos);
+  freemap[page_num] = freemap[page_num] | (bit  << bitpos);
+  return;
+}
+
+
+
 
 
 //----------------------------------------------------------------------
@@ -68,6 +114,42 @@ void MemoryModuleInit() {
 //
 //----------------------------------------------------------------------
 uint32 MemoryTranslateUserToSystem (PCB *pcb, uint32 addr) {
+  /*
+  find pagenum from addr
+find offset value from addr
+check given address is less than the max vaddress
+lookup PTE in pcb’s page table
+if PTE is not valid
+save addr to the currentSavedFrame
+page fault handler
+get and return physical address
+  */
+  int pagenum = addr / MEM_PAGESIZE;
+  int offset = addr % MEM_PAGESIZE;
+  uint32 physical_addr = (pcb->pagetable[pagenum] & MEM_PTE_MASK) + offset;
+  if(addr < MEM_MAX_VIRTUAL_ADDRESS){
+    //lookup PTE in pcb's page table
+    if(!(pcb->pagetable[pagenum] & MEM_PTE_VALID)){
+      /*save addr to the currentSavedFrame
+page fault handler
+get and return physical address*/
+      pcb->currentSavedFrame[PROCESS_STACK_FAULT] = addr;
+      //get the memory page handler
+      if(MemoryPageFaultHandler(pcb) == MEM_FAIL){
+        printf("MemoryTranslateUsertoSystem function error: Handle page fault failed\n");
+        return 0;
+      }
+
+    }
+  }
+  else{
+    //the address is full, can exceed
+    printf("Memory Translate User to System function error: the address exceeds max\n");
+    ProcessKill();
+    return 0;
+  }
+
+  return physical_addr;
 }
 
 
@@ -168,7 +250,41 @@ int MemoryCopyUserToSystem (PCB *pcb, unsigned char *from,unsigned char *to, int
 // Feel free to edit.
 //---------------------------------------------------------------------
 int MemoryPageFaultHandler(PCB *pcb) {
-  return MEM_FAIL;
+  /*
+  grab faulting addr from the currentSavedFrame
+grab user stack addr from the currentSavedFrame
+find pagenum for the faulting addr
+find pagenum for the user stack
+segfault (kill the process) if the faulting address is not part of the stack
+else allocate a new physical page, setup its PTE, and insert to pagetable
+  */
+
+  uint32 fault;
+  uint32 ustack;
+  int f_pagen;
+  int us_pagen;
+
+
+  fault = pcb->currentSavedFrame[PROCESS_STACK_FAULT];
+  ustack = pcb->currentSavedFrame[PROCESS_STACK_USER_STACKPOINTER];
+
+  f_pagen = fault / MEM_PAGESIZE;
+  us_pagen = ustack / MEM_PAGESIZE;
+
+  if(f_pagen < us_pagen){
+    printf("segfault (kill the process) in function MemoryPageFaultHandler\n");
+    ProcessKill();
+    return MEM_FAIL;
+  }
+  //alocate a new physical page setup its PTE
+  else{
+    pcb->pagetable[f_pagen] = MemorySetupPte(MemoryAllocPage());
+    //increment the page count
+    pcb->npages += 1;
+    return MEM_SUCCESS;
+  }
+
+
 }
 
 
@@ -178,15 +294,73 @@ int MemoryPageFaultHandler(PCB *pcb) {
 //---------------------------------------------------------------------
 
 int MemoryAllocPage(void) {
-  return -1;
+/*
+return 0 if no free pages
+find the available bit in freemap
+set it to unavailable
+decrement number of free pages
+return this allocated page number
+*/
+  int page = 0;
+  uint32 bitpos = 0;
+  uint32 page_num;
+  //return - if no free pages
+  if(nfreepages == 0){
+    printf("number of freepages are 0 in the memoryallocpage function\n");
+    return 0;
+  }
+
+  //find the available slot in freemap
+  while(freemap[page] == 0){
+    page += 1;
+  }
+
+  //set to unava
+  page_num = freemap[page];
+  while((page_num & (1 << bitpos)) == 0){
+    bitpos += 1;
+  }
+  //set to 0 means unaval
+
+  page_num = (page * 32) + bitpos;
+  MemorySetFreemap(page_num, 0);
+  //decrement number of free pages
+  nfreepages -= 1;
+
+  //return the page num
+  return page_num;
+}
+void MemoryFreePte(uint32 pte){
+  //MemoryFreePage for given pte
+  MemoryFreePage((pte & MEM_PTE_MASK) / MEM_PAGESIZE);
+  return;
 }
 
-
 uint32 MemorySetupPte (uint32 page) {
-  return -1;
+  //given physical page number, return pte with correct valid status bit
+  uint32 pte;
+
+  pte = (page * MEM_PAGESIZE) | MEM_PTE_VALID;
+  return pte;
 }
 
 
 void MemoryFreePage(uint32 page) {
+  /*
+  MemorySetFreemap for given page
+increment number of free pages*/
+
+  MemorySetFreemap(page, 1);
+
+  //increment
+  nfreepages += 1;
+  return;
 }
 
+void *malloc(){
+  return NULL;
+}
+
+int mfree(){
+  return 0;
+}

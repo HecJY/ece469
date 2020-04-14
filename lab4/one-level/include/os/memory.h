@@ -20,6 +20,18 @@ int MemoryPageFaultHandler(PCB *pcb);
 
 //---------------------------------------------------------
 // Put your function prototypes here
+
+int MemoryAllocPage();  //return 0 if no free pages
+inline void MemorySetFreemap(int page, int bit); //given the page number, set the corresponding bit in freemap[]
+void MemoryFreePage(uint32 gpage); //memorysetfreemap for given page, increment number of free pages
+void MemoryFreePte(uint32 pte); // memory freepage for given pte
+uint32 MemorySetupPte(uint32 gpage);
+void *malloc();
+int mfree();
+
+
+
+
 //---------------------------------------------------------
 // All function prototypes including the malloc and mfree functions go here
 
