@@ -1,0 +1,148 @@
+; Compiled by GCC
+.text
+	.align 2
+.proc _isspace
+.global _isspace
+_isspace:
+;  Function 'isspace'; 0 bytes of locals, 1 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#16	; alloc local storage
+	sw	0(r29),r2
+	lb	r2,3(r30)
+	addi	r31,r0,#0
+	andi	r1,r2,#0x00ff
+	seqi	r1,r1,#32
+	bnez	r1,L6
+	nop	; not filled.
+	addi	r1,r2,#-9
+	andi	r1,r1,#0x00ff
+	sleui	r1,r1,#1
+	beqz	r1,L5
+	nop	; not filled.
+L6:
+	addi	r31,r0,#1
+L5:
+	add	r1,r0,r31
+	lw	r2,0(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _isspace
+	.align 2
+.proc _isxdigit
+.global _isxdigit
+_isxdigit:
+;  Function 'isxdigit'; 0 bytes of locals, 1 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#16	; alloc local storage
+	sw	0(r29),r2
+	lb	r31,3(r30)
+	addi	r2,r0,#0
+	addi	r1,r31,#-48
+	andi	r1,r1,#0x00ff
+	sleui	r1,r1,#9
+	bnez	r1,L12
+	nop	; not filled.
+	addi	r1,r31,#-97
+	andi	r1,r1,#0x00ff
+	sleui	r1,r1,#5
+	bnez	r1,L12
+	nop	; not filled.
+	andi	r1,r31,#0x00ff
+	snei	r1,r1,#65
+	bnez	r1,L11
+	nop	; not filled.
+L12:
+	addi	r2,r0,#1
+L11:
+	add	r1,r0,r2
+	lw	r2,0(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _isxdigit
+.data
+	.align 2
+LC0:
+	.ascii "q4 (%d): Fork!\n\000"
+	.align 2
+LC1:
+	.ascii "Fork (%d): Bad semaphore s_procs_completed (%d)!\n\000"
+	.align 2
+LC2:
+	.ascii "Fork (%d): Done!\n\000"
+.text
+	.align 2
+.proc _main
+.global _main
+_main:
+;  Function 'main'; 0 bytes of locals, 0 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#8	; alloc local storage
+	lw	r2,4(r30)
+	jal	___main
+	nop	; not filled.
+	addi	r29,r29,#-16
+	lw	r2,4(r2)
+	sw	(r29),r2
+	addi	r3,r0,#0
+	sw	4(r29),r3
+	addi	r3,r0,#10
+	sw	8(r29),r3
+	jal	_dstrtol
+	nop	; not filled.
+	add	r2,r0,r1
+	jal	_getpid
+	nop	; not filled.
+	lhi	r3,((LC0)>>16)&0xffff
+	addui	r3,r3,(LC0)&0xffff
+	sw	(r29),r3
+	sw	4(r29),r1
+	jal	_Printf
+	nop	; not filled.
+	jal	_fork
+	nop	; not filled.
+	sw	(r29),r2
+	jal	_sem_signal
+	nop	; not filled.
+	addi	r29,r29,#16
+	snei	r1,r1,#1
+	beqz	r1,L16
+	nop	; not filled.
+	jal	_getpid
+	nop	; not filled.
+	addi	r29,r29,#-16
+	lhi	r3,((LC1)>>16)&0xffff
+	addui	r3,r3,(LC1)&0xffff
+	sw	(r29),r3
+	sw	4(r29),r1
+	sw	8(r29),r2
+	jal	_Printf
+	nop	; not filled.
+	jal	_Exit
+	nop	; not filled.
+	addi	r29,r29,#16
+L16:
+	jal	_getpid
+	nop	; not filled.
+	addi	r29,r29,#-8
+	lhi	r3,((LC2)>>16)&0xffff
+	addui	r3,r3,(LC2)&0xffff
+	sw	(r29),r3
+	sw	4(r29),r1
+	jal	_Printf
+	nop	; not filled.
+	addi	r29,r29,#8
+	jal	_exit
+	nop
+.endproc _main
