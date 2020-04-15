@@ -1,7 +1,7 @@
 ; Linked by DLX-LD.
 ; MemSize 151552
 ; Data size: 65196
-; Text size: 72172
+; Text size: 72208
 ; Stack size: 8192
 .text 0x1000
 .data 0x13000
@@ -10294,8 +10294,17 @@ L268_LF3:
 	lw	r1,-24(r30)
 	lw	r2,(r1)
 	addi	r1,r2,#40
-	addi	r2,r0,#1
-	sw	(r1),r2
+	lw	r2,-24(r30)
+	lhi	r4,((_currentPCB)>>16)&0xffff
+	addui	r4,r4,(_currentPCB)&0xffff
+	lw	r3,(r4)
+	lw	r4,(r3)
+	addi	r3,r4,#40
+	lw	r4,(r3)
+	andi	r3,r4,#4095
+	lw	r2,8(r2)
+	add	r3,r2,r3
+	sw	(r1),r3
 L269_LF3:
 	addi	r29,r29,#-8
 	add	r1,r0,r29

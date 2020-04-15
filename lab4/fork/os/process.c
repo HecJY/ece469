@@ -1082,7 +1082,7 @@ void ProcessRealFork(){
   
   //Fix the previous saved frame pointer if there was a previous saved frame
   if (currentPCB->currentSavedFrame[PROCESS_STACK_PREV_FRAME] !=0){
-    child->currentSavedFrame[PROCESS_STACK_PREV_FRAME] = 1;
+    child->currentSavedFrame[PROCESS_STACK_PREV_FRAME] = (uint32)(child->sysStackArea + (currentPCB->currentSavedFrame[PROCESS_STACK_PREV_FRAME] & MEM_ADDRESS_OFFSET_MASK));
   }
     
   //Set return value of fork to the PID of the child process for the parent
